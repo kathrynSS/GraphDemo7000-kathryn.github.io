@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        
+        /* Main app styles continue */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .history-panel {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.9);
+            overflow-y: auto;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, margin-left 0.3s ease, opacity 0.2s ease;
+            max-width: 350px;
+            min-width: 350px;
+            z-index: 5;
+            border-radius: 0 20px 20px 0;
+        }
+        
+        .history-panel.collapsed {
+            transform: translateX(-350px);
+            margin-left: -350px;
+            opacity: 0;
+        }
+        
+        .toggle-history {
+            position: absolute;
+            left: 350px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            color: #8a7aff;
+            border: none;
+            width: 24px;
+            height: 50px;
+            border-radius: 0 6px 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .toggle-history:hover {
+            transform: translateY(-50%);
+            opacity: 1;
+            background: white;
+        }
+        
+        .toggle-history.collapsed {
+            left: 0;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .history-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #6c63ff;
+            padding-bottom: 18px;
+            border-bottom: 2px solid rgba(108, 99, 255, 0.2);
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 10;
+            padding-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .history-title::before {
+            content: "🕒";
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        
+        .history-items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 10px;
+        }
+        
+        .history-date-divider {
+            font-size: 13px;
+            color: #7e7ab0;
+            margin: 15px 0 10px 0;
+            text-align: center;
+            position: relative;
+            font-weight: 500;
+        }
+        
+        .history-date-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background-color: rgba(108, 99, 255, 0.15);
+            z-index: -1;
+        }
+        
+        .history-date-divider span {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 0 12px;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border-radius: 16px;
+            background-color: white;
+            box-shadow: 0 3px 12px rgba(108, 99, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #6c63ff;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .history-item:hover {
+            box-shadow: 0 6px 15px rgba(108, 99, 255, 0.15);
+            transform: translateY(-3px) scale(1.01);
+        }
+        
+        .history-item:active {
+            transform: translateY(0px);
+            background-color: #f9f8ff;
+        }
+        
+        .history-question {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a4580;
+            font-size: 15px;
+            line-height: 1.4;
+            border-left: 3px solid #6c63ff;
+            padding-left: 10px;
+        }
+        
+        .history-answer {
+            font-size: 13.5px;
+            color: #7e7ab0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.5;
+            margin-left: 13px;
+            font-style: italic;
+        }
+        
+        .history-time {
+            font-size: 12px;
+            color: #a8a5d3;
+            margin-top: 10px;
+            text-align: right;
+        }
+        
+        .history-item .ripple {
+            position: absolute;
+            background: rgba(108, 99, 255, 0.15);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .chat-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+            border-left: 1px solid rgba(108, 99, 255, 0.1);
+            transition: flex 0.3s ease;
+            border-radius: 20px 0 0 20px;
+            margin: 15px 15px 15px 0;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 22px 30px;
+            font-weight: 600;
+            font-size: 24px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 20px 0 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chat-header::before, .chat-header::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 0;
+        }
+        
+        .chat-header::before {
+            top: -120px;
+            right: -80px;
+        }
+        
+        .chat-header::after {
+            bottom: -120px;
+            left: -80px;
+        }
+        
+        .chat-header span {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: auto;
+            margin: 0 auto;
+        }
+        
+        .chat-header span::before {
+            content: "🤖";
+            margin-right: 12px;
+            font-size: 28px;
+        }
+        
+        .chat-messages {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-color: transparent;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 18px 24px;
+            margin-bottom: 5px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 16px;
+            line-height: 1.5;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+        
+        .message:hover {
+            transform: translateY(-2px);
+        }
+        
+        .bot {
+            background-color: #f0f0ff;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            color: #4a4580;
+            border-left: 4px solid #6c63ff;
+        }
+        
+        .user {
+            background: linear-gradient(135deg, #8a7aff, #6c63ff);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.2);
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 25px;
+            border-top: 1px solid rgba(108, 99, 255, 0.1);
+            background-color: white;
+            border-radius: 0 0 0 20px;
+        }
+        
+        #messageInput {
+            flex-grow: 1;
+            padding: 18px 25px;
+            border: 2px solid rgba(108, 99, 255, 0.2);
+            border-radius: 30px;
+            outline: none;
+            font-size: 16px;
+            font-family: inherit;
+            background-color: #f9f8ff;
+            transition: all 0.3s ease;
+        }
+        
+        #messageInput:focus {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.15);
+            background-color: white;
+        }
+        
+        #sendButton {
+            background-color: #6c63ff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            margin-left: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(108, 99, 255, 0.2);
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        
+        #sendButton:hover {
+            background-color: #5a52d5;
+            transform: scale(1.05);
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: #f0f0ff;
+            padding: 15px 20px;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            background-color: #6c63ff;
+            display: inline-block;
+            border-radius: 50%;
+            animation: bounce 1.3s linear infinite;
+            margin-right: 5px;
+            opacity: 0.7;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+        
+        .answer-box {
+            background-color: white;
+            border-left: 5px solid #6c63ff;
+            padding: 25px;
+            margin: 5px 0;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(108, 99, 255, 0.15);
+            font-size: 17px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .answer-box::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(rgba(108, 99, 255, 0.03), transparent);
+            top: -100px;
+            right: -100px;
+            z-index: 0;
+        }
+        
+        .answer-box::after {
+            content: '';
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(rgba(108, 99, 255, 0.03), transparent);
+            bottom: -75px;
+            left: -75px;
+            z-index: 0;
+        }
+        
+        .answer-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #6c63ff;
+            font-size: 22px;
+            border-bottom: 2px solid rgba(108, 99, 255, 0.2);
+            padding-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .answer-content {
+            color: #4a4580;
+            font-size: 17px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        pre {
+            background-color: #f9f8ff;
+            padding: 18px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid rgba(108, 99, 255, 0.2);
+            margin: 15px 0;
+            position: relative;
+            z-index: 2;
+        }
+        
+        svg {
+            width: 100%;
+            height: auto;
+            margin: 15px 0;
+            border-radius: 12px;
+            border: 1px solid rgba(108, 99, 255, 0.2);
+            background-color: #f9f8ff;
+            position: relative;
+            z-index: 2;
+        }
+        
+        /* Knowledge Graph Button */
+        .knowledge-graph-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            z-index: 100;
+            background-color: #6c63ff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .knowledge-graph-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        
+        .knowledge-graph-btn i {
+            font-size: 14px;
+        }
+        
+        @media (max-width: 1024px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .chat-container {
+                flex: 2;
+                border-radius: 20px;
+                margin: 15px;
+            }
+            
+            .chat-header {
+                border-radius: 20px 20px 0 0;
+                padding-right: 80px; /* Make room for the button */
+            }
+            
+            .knowledge-graph-btn {
+                top: 16px;
+                right: 15px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .chat-input {
+                border-radius: 0 0 20px 20px;
+            }
+            
+            .history-panel {
+                flex: 1;
+                max-height: 30vh;
+                border-radius: 20px;
+                margin: 15px;
+                max-width: none;
+                min-width: auto;
+            }
+            
+            .history-panel.collapsed {
+                transform: translateY(-100%);
+                margin-top: -30vh;
+                margin-left: 0;
+            }
+            
+            .toggle-history {
+                left: 50%;
+                top: 30vh;
+                transform: translateX(-50%);
+            }
+            
+            .toggle-history.collapsed {
+                left: 50%;
+                top: 20px;
+            }
+            
+            .toggle-history .collapsed-icon {
+                transform: rotate(90deg);
+            }
+        }
+        
+        .chat-dialog {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            width: 280px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            overflow: hidden;
+            animation: dialogFadeIn 0.5s ease-out;
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="history-panel" id="historyPanel">
+            <h2 class="history-title">Chat History</h2>
+            <div class="history-items-container">
+                <!-- Chat history items will appear here -->
+            </div>
+        </div>
+        
+        <button class="toggle-history" id="toggleHistory">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <span>AI Chat Assistant</span>
+                <a href="knowledge_graph.html" class="knowledge-graph-btn">
+                    <i class="fas fa-project-diagram"></i>
+                    Knowledge Graph
+                </a>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    Hi there! How can I help you today? Ask me anything about algorithms, programming, or any other topic you're curious about!
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type your question here...">
+                <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatMessages = document.getElementById('chatMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const historyPanel = document.getElementById('historyPanel');
+        const toggleHistory = document.getElementById('toggleHistory');
+        const historyItemsContainer = document.querySelector('.history-items-container');
+        
+        // Toggle history panel
+        toggleHistory.addEventListener('click', () => {
+            historyPanel.classList.toggle('collapsed');
+            toggleHistory.classList.toggle('collapsed');
+            toggleHistory.innerHTML = historyPanel.classList.contains('collapsed') ? '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-left"></i>';
+            
+            // Simpler animation
+            toggleHistory.animate([
+                { opacity: 0.6 },
+                { opacity: 1 },
+                { opacity: 0.8 }
+            ], {
+                duration: 300,
+                easing: 'ease'
+            });
+        });
+        
+        // Toggle history panel with keyboard shortcut (Ctrl+H)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'h') {
+                e.preventDefault(); // Prevent default browser behavior
+                toggleHistory.click();
+            }
+        });
+        
+        // Conversation history
+        const conversationHistory = [];
+        
+        // Sample responses
+        const botResponses = [
+            "I'm here to help! What would you like to know? 😊",
+            "That's an interesting question. Let me think about it... 🤔",
+            "I'm a friendly demo chatbot. My responses are pre-programmed but designed to be helpful!",
+            "Could you provide more details about your question? I'd love to understand better! 📝",
+            "I understand. Is there anything else you'd like to discuss? 💬",
+            "Thanks for chatting with me today! It's been fun helping you. ✨",
+            "I'm still learning, but I'll do my best to assist you with anything you need! 🌱",
+            "That's a great point! I appreciate your perspective on this topic. 🌟"
+        ];
+
+        // Tree algorithm information
+        const treeAlgorithmInfo = {
+            explanation: "A tree algorithm is a type of graph algorithm that operates on tree data structures. Trees are hierarchical structures with a root node and child nodes, where each node (except the root) has exactly one parent, and there are no cycles.",
+            types: "There are several types of tree algorithms:<br><br><strong>1. Binary Search Tree (BST) Algorithms</strong>: Operations like insertion, deletion, and searching in a binary search tree where left child < parent < right child.<br><br><strong>2. Tree Traversal Algorithms</strong>: Ways to visit all nodes in a tree, including in-order, pre-order, post-order (depth-first approaches) and level-order (breadth-first approach).<br><br><strong>3. Shortest Path Algorithms</strong>: Like Dijkstra's and A* when applied to trees.<br><br><strong>4. Spanning Tree Algorithms</strong>: Including Minimum Spanning Tree algorithms like Kruskal's and Prim's.<br><br><strong>5. Trie Algorithms</strong>: For efficient retrieval of keys in a dataset of strings.",
+            examples: "Common tree algorithms include: Binary Search Tree operations, Tree Traversal (pre-order, in-order, post-order), Depth-First Search, Breadth-First Search, and Spanning Tree algorithms like Kruskal's and Prim's.",
+            applications: "Tree algorithms are used in: Database indexing, File system organization, Network routing, Decision making, Game AI, Syntax parsing in compilers, and Hierarchical clustering in machine learning.",
+            implementation: "Here's how to implement a basic Binary Search Tree and its operations:<br><br><strong class='clickable-step' data-step='1'>Step 1: Define the Node Structure</strong><br>- Create a class/struct for tree nodes<br>- Include data field, left child reference, and right child reference<br><br><strong class='clickable-step' data-step='2'>Step 2: Create the Tree Class</strong><br>- Define a class to manage the tree<br>- Track the root node<br><br><strong class='clickable-step' data-step='3'>Step 3: Implement Basic Operations</strong><br>- <strong>Insertion</strong>: Compare with current node, go left if smaller, right if larger<br>- <strong>Search</strong>: Similar traversal, return node if found<br>- <strong>Deletion</strong>: Handle cases for leaf nodes, nodes with one child, and nodes with two children<br><br><strong class='clickable-step' data-step='4'>Step 4: Implement Traversal Methods</strong><br>- Add in-order, pre-order, and post-order traversal functions<br>- Consider adding breadth-first traversal<br><br><strong class='clickable-step' data-step='5'>Step 5: Add Utility Functions</strong><br>- Height calculation<br>- Node counting<br>- Balance checking (for balanced trees)",
+            code: `// Example of a Binary Search Tree implementation in JavaScript
+
+// Step 1: Define the Node structure
+class TreeNode {
+  constructor(value) {
+    this.value = value;
+    this.left = null;
+    this.right = null;
+  }
+}
+
+// Step 2: Create the BST class
+class BinarySearchTree {
+  constructor() {
+    this.root = null;
+  }
+  
+  // Step 3: Implement insertion
+  insert(value) {
+    const newNode = new TreeNode(value);
+    
+    if (this.root === null) {
+      this.root = newNode;
+      return this;
+    }
+    
+    function insertNode(node, newNode) {
+      // Go to the left if value is smaller
+      if (newNode.value < node.value) {
+        if (node.left === null) {
+          node.left = newNode;
+        } else {
+          insertNode(node.left, newNode);
+        }
+      } 
+      // Go to the right if value is greater
+      else {
+        if (node.right === null) {
+          node.right = newNode;
+        } else {
+          insertNode(node.right, newNode);
+        }
+      }
+    }
+    
+    insertNode(this.root, newNode);
+    return this;
+  }
+  
+  // Step 3: Implement search
+  search(value) {
+    if (!this.root) return false;
+    
+    let current = this.root;
+    while (current) {
+      if (value === current.value) return true;
+      if (value < current.value) {
+        current = current.left;
+      } else {
+        current = current.right;
+      }
+    }
+    return false;
+  }
+  
+  // Step 4: Implement in-order traversal
+  inOrderTraversal(node, result = []) {
+    if (node !== null) {
+      this.inOrderTraversal(node.left, result);
+      result.push(node.value);
+      this.inOrderTraversal(node.right, result);
+    }
+    return result;
+  }
+}
+
+// Usage example
+const bst = new BinarySearchTree();
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(2);
+bst.insert(7);
+
+console.log(bst.search(7)); // true
+console.log(bst.search(99)); // false
+
+console.log(bst.inOrderTraversal(bst.root)); // [2, 5, 7, 10, 15]`,
+            // Add detailed information for each step
+            stepDetails: {
+                step1: {
+                    title: "Step 1: Define the Node Structure",
+                    content: `<div class="step-detail">
+                        <div class="step-question">How do I define the node structure for a tree algorithm?</div>
+                        <p>The foundation of any tree implementation starts with defining the node structure:</p>
+                        <pre class="code-snippet">
+class TreeNode {
+  constructor(value) {
+    this.value = value;  // Stores the node's data
+    this.left = null;    // Reference to left child
+    this.right = null;   // Reference to right child
+  }
+}</pre>
+                        <p>This structure includes:</p>
+                        <ul>
+                            <li><strong>Data field</strong>: Stores the actual value (can be any type)</li>
+                            <li><strong>Left child reference</strong>: Points to the left subtree (smaller values in a BST)</li>
+                            <li><strong>Right child reference</strong>: Points to the right subtree (larger values in a BST)</li>
+                        </ul>
+                        <p>For more complex trees, you might add:</p>
+                        <ul>
+                            <li>Parent references</li>
+                            <li>Height or balance information</li>
+                            <li>Color (for Red-Black trees)</li>
+                        </ul>
+                    </div>`
+                },
+                step2: {
+                    title: "Step 2: Create the Tree Class",
+                    content: `<div class="step-detail">
+                        <div class="step-question">How do I create a class to manage the tree?</div>
+                        <p>With nodes defined, we need a class to manage the tree structure:</p>
+                        <pre class="code-snippet">
+class BinarySearchTree {
+  constructor() {
+    this.root = null;  // The top-most node
+  }
+  
+  // Methods will be added here
+}</pre>
+                        <p>The tree class typically includes:</p>
+                        <ul>
+                            <li><strong>Root reference</strong>: Points to the top node of the tree</li>
+                            <li><strong>Size tracking</strong> (optional): Keeps count of nodes</li>
+                            <li><strong>Metadata</strong>: Height, balance information, etc.</li>
+                        </ul>
+                        <p>This class will contain all operations that can be performed on the tree.</p>
+                    </div>`
+                },
+                step3: {
+                    title: "Step 3: Implement Basic Operations",
+                    content: `<div class="step-detail">
+                        <div class="step-question">How do I implement the core operations of a tree algorithm?</div>
+                        <h4>Insertion</h4>
+                        <pre class="code-snippet">
+insert(value) {
+  const newNode = new TreeNode(value);
+  
+  // If tree is empty, new node becomes root
+  if (this.root === null) {
+    this.root = newNode;
+    return this;
+  }
+  
+  // Otherwise, find the correct position
+  function insertNode(node, newNode) {
+    // Go left if new value is smaller
+    if (newNode.value < node.value) {
+      if (node.left === null) node.left = newNode;
+      else insertNode(node.left, newNode);
+    } 
+    // Go right if new value is larger
+    else {
+      if (node.right === null) node.right = newNode;
+      else insertNode(node.right, newNode);
+    }
+  }
+  
+  insertNode(this.root, newNode);
+  return this;
+}</pre>
+                        <h4>Search</h4>
+                        <pre class="code-snippet">
+search(value) {
+  if (!this.root) return false;
+  
+  let current = this.root;
+  while (current) {
+    if (value === current.value) return true;
+    // Go left if value is smaller
+    if (value < current.value) current = current.left;
+    // Go right if value is larger
+    else current = current.right;
+  }
+  return false; // Value not found
+}</pre>
+                        <h4>Deletion</h4>
+                        <p>Deletion is more complex, handling three cases:</p>
+                        <ol>
+                            <li><strong>Leaf node</strong>: Simply remove it</li>
+                            <li><strong>Node with one child</strong>: Replace with its child</li>
+                            <li><strong>Node with two children</strong>: Replace with in-order successor (smallest value in right subtree)</li>
+                        </ol>
+                    </div>`
+                },
+                step4: {
+                    title: "Step 4: Implement Traversal Methods",
+                    content: `<div class="step-detail">
+                        <div class="step-question">How do I implement different traversal methods for a tree?</div>
+                        <p>Tree traversal allows visiting all nodes in a specific order.</p>
+                        
+                        <h4>In-order Traversal (Left → Root → Right)</h4>
+                        <pre class="code-snippet">
+inOrderTraversal(node, result = []) {
+  if (node !== null) {
+    this.inOrderTraversal(node.left, result);  // Visit left subtree
+    result.push(node.value);                   // Visit current node
+    this.inOrderTraversal(node.right, result); // Visit right subtree
+  }
+  return result;
+}</pre>
+                        <p>For a BST, in-order traversal visits nodes in ascending order.</p>
+                        
+                        <h4>Pre-order Traversal (Root → Left → Right)</h4>
+                        <pre class="code-snippet">
+preOrderTraversal(node, result = []) {
+  if (node !== null) {
+    result.push(node.value);                    // Visit current node
+    this.preOrderTraversal(node.left, result);  // Visit left subtree
+    this.preOrderTraversal(node.right, result); // Visit right subtree
+  }
+  return result;
+}</pre>
+                        <p>Useful for creating a copy of the tree or for expression trees.</p>
+                        
+                        <h4>Post-order Traversal (Left → Right → Root)</h4>
+                        <pre class="code-snippet">
+postOrderTraversal(node, result = []) {
+  if (node !== null) {
+    this.postOrderTraversal(node.left, result);  // Visit left subtree
+    this.postOrderTraversal(node.right, result); // Visit right subtree
+    result.push(node.value);                     // Visit current node
+  }
+  return result;
+}</pre>
+                        <p>Useful for deletion operations or evaluating expressions.</p>
+                        
+                        <h4>Level-order (Breadth-First) Traversal</h4>
+                        <pre class="code-snippet">
+levelOrderTraversal() {
+  const result = [];
+  const queue = [];
+  
+  if (this.root === null) return result;
+  
+  queue.push(this.root);
+  
+  while (queue.length > 0) {
+    const currentNode = queue.shift();
+    result.push(currentNode.value);
+    
+    if (currentNode.left) queue.push(currentNode.left);
+    if (currentNode.right) queue.push(currentNode.right);
+  }
+  
+  return result;
+}</pre>
+                        <p>Visits nodes level by level, useful for breadth-first algorithms.</p>
+                    </div>`
+                },
+                step5: {
+                    title: "Step 5: Add Utility Functions",
+                    content: `<div class="step-detail">
+                        <div class="step-question">What additional utility functions should I implement for my tree?</div>
+                        <p>These additional functions enhance the functionality of your tree:</p>
+                        
+                        <h4>Get Height</h4>
+                        <pre class="code-snippet">
+getHeight(node = this.root) {
+  if (node === null) return -1;
+  
+  const leftHeight = this.getHeight(node.left);
+  const rightHeight = this.getHeight(node.right);
+  
+  return Math.max(leftHeight, rightHeight) + 1;
+}</pre>
+                        
+                        <h4>Count Nodes</h4>
+                        <pre class="code-snippet">
+countNodes(node = this.root) {
+  if (node === null) return 0;
+  
+  return 1 + this.countNodes(node.left) + this.countNodes(node.right);
+}</pre>
+                        
+                        <h4>Check if Balanced</h4>
+                        <pre class="code-snippet">
+isBalanced(node = this.root) {
+  if (node === null) return true;
+  
+  const leftHeight = this.getHeight(node.left);
+  const rightHeight = this.getHeight(node.right);
+  
+  // Check if current node is balanced
+  if (Math.abs(leftHeight - rightHeight) <= 1 &&
+      this.isBalanced(node.left) &&
+      this.isBalanced(node.right)) {
+    return true;
+  }
+  
+  return false;
+}</pre>
+                        
+                        <h4>Find Min/Max Values</h4>
+                        <pre class="code-snippet">
+findMin(node = this.root) {
+  if (node === null) return null;
+  
+  // The leftmost node has the minimum value
+  while (node.left !== null) {
+    node = node.left;
+  }
+  
+  return node.value;
+}
+
+findMax(node = this.root) {
+  if (node === null) return null;
+  
+  // The rightmost node has the maximum value
+  while (node.right !== null) {
+    node = node.right;
+  }
+  
+  return node.value;
+}</pre>
+                    </div>`
+                }
+            },
+            knowledge_graph: [
+                { name: "Tree Algorithms", type: "central", description: "Algorithms that operate on tree data structures, which are hierarchical structures with a root node and child nodes." },
+                { name: "Binary Trees", type: "type", description: "Trees where each node has at most two children, typically referred to as left and right children." },
+                { name: "Traversal", type: "operation", description: "Methods for visiting all nodes in a tree in a specific order, including depth-first (in-order, pre-order, post-order) and breadth-first approaches." },
+                { name: "DFS", type: "algorithm", description: "Depth-First Search traverses as far as possible along each branch before backtracking, using a stack (typically implemented recursively)." },
+                { name: "BFS", type: "algorithm", description: "Breadth-First Search explores all neighbor nodes at the present depth before moving to nodes at the next depth level, using a queue." },
+                { name: "Spanning Trees", type: "application", description: "A spanning tree of a graph is a subgraph that includes all vertices but only enough edges to form a tree (no cycles)." },
+                { name: "Applications", type: "category", description: "Tree algorithms are widely used in database indexes, file systems, network routing, compilers, and artificial intelligence." }
+            ]
+        };
+        
+        // Initialize with some sample history
+        initializeHistory();
+        
+        function initializeHistory() {
+            const sampleHistory = [
+                { 
+                    question: "What is machine learning?", 
+                    answer: "Machine learning is a subset of artificial intelligence that allows systems to learn and improve from experience.",
+                    time: "10:45 AM" 
+                },
+                { 
+                    question: "How does blockchain work?", 
+                    answer: "Blockchain is a distributed ledger technology that records transactions across multiple computers.",
+                    time: "Yesterday" 
+                },
+                { 
+                    question: "What is cloud computing?", 
+                    answer: "Cloud computing delivers computing services over the internet, offering faster innovation and flexible resources.",
+                    time: "Yesterday" 
+                }
+            ];
+            
+            // Add date divider for today
+            addDateDivider("Today");
+            
+            // Add first two items
+            addToHistory(sampleHistory[0].question, sampleHistory[0].answer, sampleHistory[0].time);
+            
+            // Add date divider for yesterday
+            addDateDivider("Yesterday");
+            
+            // Add remaining items
+            addToHistory(sampleHistory[1].question, sampleHistory[1].answer, sampleHistory[1].time);
+            addToHistory(sampleHistory[2].question, sampleHistory[2].answer, sampleHistory[2].time);
+        }
+        
+        function addDateDivider(dateText) {
+            const divider = document.createElement('div');
+            divider.classList.add('history-date-divider');
+            divider.innerHTML = `<span>${dateText}</span>`;
+            
+            historyItemsContainer.appendChild(divider);
+        }
+        
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user' : 'bot');
+            
+            // Check if it's HTML content
+            if (text.includes('<')) {
+                messageDiv.innerHTML = text;
+            } else {
+                messageDiv.textContent = text;
+            }
+            
+            // Add animation class
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transform = isUser ? 'translateX(20px)' : 'translateX(-20px)';
+            
+            // Insert before typing indicator
+            chatMessages.insertBefore(messageDiv, typingIndicator);
+            
+            // Trigger animation
+            setTimeout(() => {
+                messageDiv.style.transition = 'all 0.3s ease';
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Scroll to the bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv.textContent || messageDiv.innerText;
+        }
+        
+        function addToHistory(question, answer, time = '') {
+            // Add to conversation history array
+            conversationHistory.unshift({ question, answer, time });
+            
+            // Set default time if not provided
+            if (!time) {
+                const now = new Date();
+                time = now.getHours().toString().padStart(2, '0') + ':' + 
+                       now.getMinutes().toString().padStart(2, '0') + ' ' +
+                       (now.getHours() >= 12 ? 'PM' : 'AM');
+            }
+            
+            // Create history item in UI
+            const historyItem = document.createElement('div');
+            historyItem.classList.add('history-item');
+            
+            const historyQuestion = document.createElement('div');
+            historyQuestion.classList.add('history-question');
+            historyQuestion.textContent = question;
+            
+            const historyAnswer = document.createElement('div');
+            historyAnswer.classList.add('history-answer');
+            
+            // Get plain text from HTML answer if needed
+            let plainTextAnswer = answer;
+            if (answer.includes('<')) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = answer;
+                plainTextAnswer = tempDiv.textContent || tempDiv.innerText;
+            }
+            
+            historyAnswer.textContent = plainTextAnswer.substring(0, 100) + (plainTextAnswer.length > 100 ? '...' : '');
+            
+            const historyTime = document.createElement('div');
+            historyTime.classList.add('history-time');
+            historyTime.textContent = time;
+            
+            historyItem.appendChild(historyQuestion);
+            historyItem.appendChild(historyAnswer);
+            historyItem.appendChild(historyTime);
+            
+            // Add animation for new items
+            historyItem.style.opacity = '0';
+            historyItem.style.transform = 'translateY(10px)';
+            
+            // Add click event to simulate clicking (visual feedback only)
+            historyItem.addEventListener('click', (e) => {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                
+                const rect = historyItem.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                historyItem.appendChild(ripple);
+                
+                // Remove ripple after animation completes
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+                
+                // Flash the history item to simulate selection
+                historyItem.style.backgroundColor = '#f9f8ff';
+                setTimeout(() => {
+                    historyItem.style.backgroundColor = '';
+                }, 300);
+                
+                // Show toast notification
+                showToast('History items are for display only 📝');
+            });
+            
+            // Add to history items container (at the top of the current date section)
+            const currentDayDivider = historyItemsContainer.querySelector('.history-date-divider:first-of-type');
+            
+            // Check if there is already an entry for this question
+            const existingItems = historyItemsContainer.querySelectorAll('.history-item');
+            for (let i = 0; i < existingItems.length; i++) {
+                const itemQuestion = existingItems[i].querySelector('.history-question').textContent;
+                if (itemQuestion === question) {
+                    // Instead of creating a new entry, just update the existing one
+                    existingItems[i].remove();
+                    break;
+                }
+            }
+            
+            if (currentDayDivider && currentDayDivider.nextElementSibling) {
+                historyItemsContainer.insertBefore(historyItem, currentDayDivider.nextElementSibling);
+            } else {
+                historyItemsContainer.appendChild(historyItem);
+            }
+            
+            // Trigger animation
+            setTimeout(() => {
+                historyItem.style.transition = 'all 0.4s ease';
+                historyItem.style.opacity = '1';
+                historyItem.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // Limit history items (optional)
+            const allItems = historyItemsContainer.querySelectorAll('.history-item');
+            if (allItems.length > 20) {
+                // Also remove date divider if it's the last item in its section
+                const lastItem = allItems[allItems.length - 1];
+                const prevElement = lastItem.previousElementSibling;
+                lastItem.remove();
+                
+                if (prevElement && prevElement.classList.contains('history-date-divider') && 
+                    (!prevElement.nextElementSibling || prevElement.nextElementSibling.classList.contains('history-date-divider'))) {
+                    prevElement.remove();
+                }
+            }
+        }
+        
+        // Toast notification function
+        function showToast(message) {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.classList.add('toast');
+            toast.textContent = message;
+            
+            // Style the toast
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = 'rgba(108, 99, 255, 0.9)';
+            toast.style.color = 'white';
+            toast.style.padding = '12px 24px';
+            toast.style.borderRadius = '50px';
+            toast.style.zIndex = '1000';
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            toast.style.boxShadow = '0 4px 15px rgba(108, 99, 255, 0.3)';
+            toast.style.fontWeight = '500';
+            toast.style.transform = 'translateX(-50%) translateY(20px)';
+            
+            // Add to body
+            document.body.appendChild(toast);
+            
+            // Fade in
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+            
+            // Fade out and remove
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(20px)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function renderKnowledgeGraph() {
+            const width = 700;
+            const height = 280;
+            const nodeRadius = 32;
+            
+            // Create SVG for improved knowledge graph
+            let svg = `<svg width="${width}" height="${height}" style="background-color: #f9f8ff; border-radius: 12px; margin: 0 auto; display: block;">`;
+            
+            // Add gradient background
+            svg += `
+                <defs>
+                    <linearGradient id="bg_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f9f8ff; stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f0f0ff; stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                        <feOffset dx="1" dy="1" result="offsetblur"/>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge> 
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/> 
+                        </feMerge>
+                    </filter>
+                </defs>
+                <rect width="${width}" height="${height}" fill="url(#bg_gradient)" rx="12" ry="12"/>
+            `;
+            
+            // Define extremely compact hierarchical layout with fixed overlapping
+            const positions = {
+                "Tree Algorithms": { x: width/2, y: height/2-30, level: 0 }, // Moved up
+                "Binary Trees": { x: width/4-10, y: height/4+15, level: 1 },
+                "Traversal": { x: width/2, y: 3*height/4-10, level: 1 },    // Moved down
+                "Spanning Trees": { x: 3*width/4+10, y: height/4+15, level: 1 },
+                "Applications": { x: 3*width/4+40, y: height/2, level: 1 },
+                "DFS": { x: width/3-10, y: 3*height/4+20, level: 2 },
+                "BFS": { x: 2*width/3+10, y: 3*height/4+20, level: 2 }
+            };
+            
+            // Helper function to draw straight connection lines
+            function drawStraightLine(x1, y1, x2, y2, color, width) {
+                return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-opacity="0.7" />`;
+            }
+            
+            // Define connection lines first to draw them behind nodes
+            svg += `<g class="connections">`;
+            
+            // Add connections from Tree Algorithms to level 1 nodes
+            const rootNode = positions["Tree Algorithms"];
+            const levelOneNodes = ["Binary Trees", "Traversal", "Spanning Trees", "Applications"];
+            for (const nodeName of levelOneNodes) {
+                const targetNode = positions[nodeName];
+                svg += drawStraightLine(rootNode.x, rootNode.y, targetNode.x, targetNode.y, "#6c63ff", 1.5);
+            }
+            
+            // Add connections from Traversal to DFS and BFS
+            const traversalNode = positions["Traversal"];
+            svg += drawStraightLine(traversalNode.x, traversalNode.y, positions["DFS"].x, positions["DFS"].y, "#6c63ff", 1.5);
+            svg += drawStraightLine(traversalNode.x, traversalNode.y, positions["BFS"].x, positions["BFS"].y, "#6c63ff", 1.5);
+            
+            svg += `</g>`;
+            
+            // Colors for different levels - darker to improve text contrast
+            const levelColors = {
+                0: { fill: "#5547e0", text: "#ffffff" }, // Darker purple
+                1: { fill: "#e84c4c", text: "#ffffff" }, // Darker red
+                2: { fill: "#2eb8ac", text: "#ffffff" }  // Darker teal
+            };
+            
+            // Draw nodes with appropriate styling per level
+            for (const [key, pos] of Object.entries(positions)) {
+                const color = levelColors[pos.level].fill;
+                const textColor = levelColors[pos.level].text;
+                
+                // Node size based on importance (level)
+                const size = nodeRadius - (pos.level * 5);
+                
+                // Draw node with drop shadow
+                svg += `
+                    <circle 
+                        cx="${pos.x}" 
+                        cy="${pos.y}" 
+                        r="${size}" 
+                        fill="${color}" 
+                        filter="url(#drop-shadow)"
+                        opacity="0.95"
+                        class="clickable-node"
+                        data-node="${key}"
+                    />
+                `;
+                
+                // Add text with better visibility and text shadow
+                svg += `
+                    <text 
+                        x="${pos.x}" 
+                        y="${pos.y}" 
+                        text-anchor="middle" 
+                        dominant-baseline="middle" 
+                        fill="${textColor}" 
+                        font-weight="${pos.level === 0 ? 'bold' : 'normal'}"
+                        font-size="${pos.level === 0 ? 14 : 13}"
+                        style="text-shadow: 0px 1px 2px rgba(0,0,0,0.5);"
+                        class="clickable-node"
+                        data-node="${key}"
+                    >${key}</text>
+                `;
+            }
+            
+            svg += `</svg>`;
+            return svg;
+        }
+        
+        function processTreeAlgorithmQuery() {
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                
+                // Content to display in answer box
+                const answerContent = `
+                <div class="answer-box">
+                    <div class="answer-title">🌳 Tree Algorithm Explanation</div>
+                    <div class="answer-content">${treeAlgorithmInfo.explanation}</div>
+                    
+                    <div class="answer-title" style="margin-top: 30px;">🔍 Types of Tree Algorithms</div>
+                    <div class="answer-content">${treeAlgorithmInfo.types}</div>
+                    
+                    <div class="answer-title" style="margin-top: 30px;">🚀 How to Implement a Tree Algorithm</div>
+                    <div class="answer-content" id="implementation-content">${treeAlgorithmInfo.implementation}</div>
+                    
+                    <div class="answer-title" style="margin-top: 15px;">🔄 Knowledge Graph</div>
+                    <div class="answer-content" style="max-width: 750px; margin: 0 auto; padding: 0;">
+                        ${renderKnowledgeGraph()}
+                    </div>
+
+                    <div id="step-details-container" style="display: none; margin-top: 30px; padding: 20px; background-color: #f9f8ff; border-radius: 12px; border-left: 5px solid #6c63ff;">
+                        <!-- Step details will be injected here -->
+                    </div>
+                </div>`;
+                
+                // Add the message to chat
+                addMessage(answerContent, false);
+                
+                // Add to history
+                addToHistory("How to implement a tree algorithm", "A tree algorithm is a type of graph algorithm that operates on tree data structures. I've provided a step-by-step guide to implementing a Binary Search Tree along with code examples.", "Just now");
+                
+                // Add click event listeners to clickable steps
+                setTimeout(() => {
+                    const clickableSteps = document.querySelectorAll('.clickable-step');
+                    const detailsContainer = document.getElementById('step-details-container');
+                    
+                    if (clickableSteps && detailsContainer) {
+                        clickableSteps.forEach(step => {
+                            // Add styling to show it's clickable
+                            step.style.cursor = 'pointer';
+                            step.style.color = '#6c63ff';
+                            step.style.transition = 'all 0.2s ease';
+                            
+                            step.addEventListener('mouseover', () => {
+                                step.style.textDecoration = 'underline';
+                            });
+                            
+                            step.addEventListener('mouseout', () => {
+                                step.style.textDecoration = 'none';
+                            });
+                            
+                            step.addEventListener('click', () => {
+                                const stepNumber = step.getAttribute('data-step');
+                                const stepDetail = treeAlgorithmInfo.stepDetails[`step${stepNumber}`];
+                                
+                                if (stepDetail) {
+                                    // First add a user message asking about this step
+                                    const userQuestion = `How do I proceed with ${stepDetail.title}?`;
+                                    addMessage(userQuestion, true);
+                                    
+                                    // Show typing indicator
+                                    typingIndicator.style.display = 'block';
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                    
+                                    // After a short delay, show the bot response
+                                    setTimeout(() => {
+                                        // Hide typing indicator
+                                        typingIndicator.style.display = 'none';
+                                        
+                                        // Add the bot response with step details
+                                        const botResponse = `
+                                        <div class="answer-box" style="margin: 0;">
+                                            <div class="answer-title">${stepDetail.title}</div>
+                                            ${stepDetail.content}
+                                        </div>`;
+                                        
+                                        addMessage(botResponse, false);
+                                        
+                                        // Add to history
+                                        addToHistory(userQuestion, `Details about ${stepDetail.title}`, "Just now");
+                                        
+                                        // Scroll to the new message
+                                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                                    }, 1000);
+                                    
+                                    // Style active step
+                                    clickableSteps.forEach(s => {
+                                        s.style.fontWeight = s === step ? '700' : '600';
+                                        s.style.color = s === step ? '#4361ee' : '#6c63ff';
+                                    });
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Add click handlers for knowledge graph nodes
+                    const clickableNodes = document.querySelectorAll('.clickable-node');
+                    
+                    if (clickableNodes.length > 0) {
+                        // Find node descriptions from the knowledge graph data
+                        const nodeDescriptions = {};
+                        treeAlgorithmInfo.knowledge_graph.forEach(node => {
+                            nodeDescriptions[node.name] = node.description;
+                        });
+                        
+                        clickableNodes.forEach(node => {
+                            node.style.cursor = 'pointer';
+                            
+                            node.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const nodeName = node.getAttribute('data-node');
+                                const description = nodeDescriptions[nodeName];
+                                
+                                if (description) {
+                                    // Create dialog box
+                                    showNodeDialog(nodeName, description);
+                                }
+                            });
+                        });
+                    }
+                }, 100);
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1500);
+        }
+        
+        // Function to show node dialog
+        function showNodeDialog(title, content) {
+            // Remove any existing dialog
+            const existingDialog = document.querySelector('.node-dialog');
+            if (existingDialog) {
+                existingDialog.remove();
+            }
+            
+            // Create dialog element
+            const dialog = document.createElement('div');
+            dialog.classList.add('node-dialog');
+            
+            // Add content
+            dialog.innerHTML = `
+                <div class="dialog-header">
+                    <h3>${title}</h3>
+                    <button class="dialog-close">×</button>
+                </div>
+                <div class="dialog-content">
+                    <p>${content}</p>
+                </div>
+                <div class="dialog-footer">
+                    <button class="learn-more-btn">Learn More</button>
+                </div>
+            `;
+            
+            // Style the dialog
+            Object.assign(dialog.style, {
+                position: 'fixed',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'white',
+                padding: '0',
+                borderRadius: '12px',
+                boxShadow: '0 5px 30px rgba(0, 0, 0, 0.2)',
+                zIndex: '1000',
+                minWidth: '300px',
+                maxWidth: '400px',
+                opacity: '0',
+                transition: 'all 0.3s ease'
+            });
+            
+            // Style the header
+            const header = dialog.querySelector('.dialog-header');
+            Object.assign(header.style, {
+                padding: '15px 20px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'linear-gradient(135deg, #8a7aff, #6c63ff)',
+                color: 'white',
+                borderRadius: '12px 12px 0 0'
+            });
+            
+            // Style the close button
+            const closeBtn = dialog.querySelector('.dialog-close');
+            Object.assign(closeBtn.style, {
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+            });
+            
+            // Style the content
+            const dialogContent = dialog.querySelector('.dialog-content');
+            Object.assign(dialogContent.style, {
+                padding: '20px',
+                fontSize: '15px',
+                lineHeight: '1.6',
+                color: '#4a4580'
+            });
+            
+            // Style the footer
+            const footer = dialog.querySelector('.dialog-footer');
+            Object.assign(footer.style, {
+                padding: '10px 20px 20px',
+                textAlign: 'right'
+            });
+            
+            // Style the learn more button
+            const learnMoreBtn = dialog.querySelector('.learn-more-btn');
+            Object.assign(learnMoreBtn.style, {
+                background: 'linear-gradient(135deg, #8a7aff, #6c63ff)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '8px 20px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                fontWeight: '500',
+                boxShadow: '0 2px 10px rgba(108, 99, 255, 0.2)'
+            });
+            
+            // Add to body
+            document.body.appendChild(dialog);
+            
+            // Trigger animation
+            setTimeout(() => {
+                dialog.style.opacity = '1';
+                dialog.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+            
+            // Close dialog when clicking close button
+            closeBtn.addEventListener('click', () => {
+                closeDialog(dialog);
+            });
+            
+            // Close dialog when clicking outside
+            document.addEventListener('click', function outsideClickHandler(e) {
+                if (!dialog.contains(e.target)) {
+                    closeDialog(dialog);
+                    document.removeEventListener('click', outsideClickHandler);
+                }
+            });
+            
+            // Learn more button handler
+            learnMoreBtn.addEventListener('click', () => {
+                // Close the dialog
+                closeDialog(dialog);
+                
+                // Navigate to knowledge_graph.html with the node name as a parameter
+                window.location.href = `knowledge_graph.html?node=${encodeURIComponent(title)}`;
+            });
+        }
+        
+        function closeDialog(dialog) {
+            dialog.style.opacity = '0';
+            dialog.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            setTimeout(() => {
+                dialog.remove();
+            }, 300);
+        }
+        
+        function simulateBotTyping() {
+            typingIndicator.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Random delay between 1-3 seconds
+            const typingTime = Math.floor(Math.random() * 2000) + 1000;
+            
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                
+                // Get random response
+                const randomIndex = Math.floor(Math.random() * botResponses.length);
+                const response = addMessage(botResponses[randomIndex], false);
+                
+                // Add to history
+                if (messageInput.value.trim()) {
+                    addToHistory(messageInput.value.trim(), response, "Just now");
+                }
+            }, typingTime);
+        }
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                addMessage(message, true);
+                messageInput.value = '';
+                
+                // Add "sending" animation to input
+                messageInput.style.transition = 'all 0.3s ease';
+                messageInput.style.backgroundColor = '#f0f0ff';
+                setTimeout(() => {
+                    messageInput.style.backgroundColor = '#f9f8ff';
+                }, 300);
+                
+                // Animate send button
+                sendButton.animate([
+                    { transform: 'scale(1)' },
+                    { transform: 'scale(0.8)' },
+                    { transform: 'scale(1.2)' },
+                    { transform: 'scale(1)' }
+                ], {
+                    duration: 400,
+                    easing: 'ease-in-out'
+                });
+                
+                // Check if the message is about tree algorithms
+                if (message.toLowerCase().includes("tree algorithm") || 
+                    message.toLowerCase().includes("tree algorithms")) {
+                    typingIndicator.style.display = 'block';
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    processTreeAlgorithmQuery();
+                } else {
+                    simulateBotTyping();
+                }
+            }
+        }
+        
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Auto-focus input field
+        setTimeout(() => {
+            messageInput.focus();
+        }, 500);
+
+        // Add CSS for step details and node dialog
+        const style = document.createElement('style');
+        style.textContent = `
+            .step-detail {
+                font-size: 15px;
+                line-height: 1.6;
+            }
+            
+            .step-question {
+                color: #4a4580;
+                font-weight: 600;
+                font-size: 17px;
+                margin-bottom: 15px;
+                padding: 8px 15px;
+                background-color: rgba(108, 99, 255, 0.08);
+                border-radius: 8px;
+                border-left: 3px solid #6c63ff;
+            }
+            
+            .step-detail p {
+                margin-bottom: 15px;
+            }
+            
+            .step-detail ul, .step-detail ol {
+                margin-bottom: 15px;
+                padding-left: 20px;
+            }
+            
+            .step-detail li {
+                margin-bottom: 8px;
+            }
+            
+            .step-detail h4 {
+                margin: 20px 0 10px;
+                color: #4a4580;
+                font-weight: 600;
+            }
+            
+            .code-snippet {
+                background-color: #f0f0ff;
+                padding: 15px;
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 14px;
+                overflow-x: auto;
+                margin: 15px 0;
+                border-left: 3px solid #6c63ff;
+            }
+            
+            .clickable-step {
+                cursor: pointer;
+                color: #6c63ff;
+                transition: all 0.2s ease;
+            }
+            
+            .clickable-step:hover {
+                text-decoration: underline;
+            }
+            
+            .clickable-node {
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .clickable-node:hover {
+                opacity: 0.9;
+                transform: scale(1.05);
+            }
+            
+            .node-dialog {
+                font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+            
+            .learn-more-btn:hover {
+                background: linear-gradient(135deg, #7a6aef, #5c53ef) !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3) !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        document.querySelector('.chat-dialog-close').addEventListener('click', function() {
+            document.querySelector('.chat-dialog').style.display = 'none';
+        });
+        
+        document.querySelectorAll('.topic-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const topic = this.textContent.trim();
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-message';
+                userMessage.innerHTML = `
+                    <div class="user-message">Tell me about ${topic}</div>
+                    <span class="message-time">Just now</span>
+                `;
+                
+                document.querySelector('.chat-dialog-body').appendChild(userMessage);
+                
+                // Show typing indicator
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator';
+                typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+                document.querySelector('.chat-dialog-body').appendChild(typingIndicator);
+                
+                // Simulate AI response after typing
+                setTimeout(() => {
+                    typingIndicator.remove();
+                    
+                    const aiMessage = document.createElement('div');
+                    aiMessage.className = 'chat-message';
+                    
+                    // Customize response based on topic
+                    let responseText = '';
+                    if (topic.includes('AVL Tree')) {
+                        responseText = `An AVL Tree is a self-balancing binary search tree where the height difference between left and right subtrees cannot exceed 1 for all nodes. This balancing is crucial for maintaining O(log n) search operations.`;
+                    } else if (topic.includes('Trees')) {
+                        responseText = `Trees are hierarchical data structures with a root node and child nodes. They're fundamental in computer science, used for everything from file systems to database indexing.`;
+                    } else if (topic.includes('Binary Search Tree')) {
+                        responseText = `A Binary Search Tree (BST) is a binary tree with the property that all nodes in the left subtree have values less than the node's value, and all nodes in the right subtree have values greater than the node's value.`;
+                    } else if (topic.includes('Data Structures')) {
+                        responseText = `Data Structures are specialized formats for organizing and storing data to enable efficient access and modification. They're fundamental building blocks in computer science and algorithms.`;
+                    } else {
+                        responseText = `I'd be happy to tell you about ${topic}!`;
+                    }
+                    
+                    aiMessage.innerHTML = `
+                        <div class="ai-message">
+                            ${responseText}
+                            <div class="related-topics" style="margin-top: 10px;">
+                                <div class="topic-tags">
+                                    <div class="topic-tag" style="background-color: #3498db; color: white;">
+                                        <i class="fas fa-external-link-alt"></i> View in Knowledge Graph
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="message-time">Just now</span>
+                    `;
+                    
+                    document.querySelector('.chat-dialog-body').appendChild(aiMessage);
+                    document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+                    
+                    // Add click event to the "View in Knowledge Graph" button
+                    const viewGraphButton = aiMessage.querySelector('.topic-tag');
+                    if (viewGraphButton) {
+                        viewGraphButton.addEventListener('click', function() {
+                            // Navigate to knowledge graph page
+                            window.location.href = 'knowledge_graph.html';
+                        });
+                    }
+                }, 1500);
+                
+                document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+            });
+        });
+    </script>
+</body>
+</html> 

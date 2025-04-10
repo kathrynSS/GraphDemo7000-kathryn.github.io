@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithms & Data Structures Knowledge Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f2f5;
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+        .links line {
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 1.5px;
+            transition: stroke-width 0.3s ease;
+        }
+        .links line:hover {
+            stroke-width: 3px;
+            stroke: #555;
+        }
+        .links line.highlighted {
+            stroke-width: 3px;
+            stroke: #6a4c93;
+            stroke-opacity: 0.9;
+            filter: drop-shadow(0 0 3px rgba(52, 152, 219, 0.5));
+        }
+        .nodes circle {
+            stroke: #fff;
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+        }
+        .nodes circle:hover {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+        }
+        .nodes circle.highlighted {
+            stroke: #ff9900;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 8px rgba(255, 153, 0, 0.5));
+        }
+        .nodes circle.connected {
+            stroke: #6a4c93;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 5px rgba(52, 152, 219, 0.3));
+        }
+        .labels {
+            font-size: 13px;
+            font-weight: 500;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        .link-labels {
+            font-size: 11px;
+            font-weight: 500;
+            pointer-events: none;
+            fill: #444;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px;
+            border-radius: 3px;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .legend-item {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        .node-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: none;
+            z-index: 1000;
+            max-width: 400px;
+            width: 90%;
+            cursor: default;
+            backdrop-filter: blur(3px);
+            border: 1px solid rgba(220, 220, 220, 0.5);
+        }
+        .node-dialog.active {
+            display: block;
+            animation: dialog-fade-in 0.3s ease-out;
+            transform-origin: center center;
+        }
+        .node-dialog.draggable {
+            transform: none;
+            top: 100px;
+            left: calc(50% - 200px);
+        }
+        @keyframes dialog-fade-in {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        .node-dialog.dragging {
+            animation: none;
+            transition: none;
+            transform: none;
+            opacity: 0.95;
+        }
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        .dialog-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+        }
+        .dialog-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #34495e;
+            font-size: 14px;
+            background-color: rgba(248, 249, 250, 0.7);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #6a4c93;
+        }
+        .dialog-connections {
+            margin-bottom: 15px;
+        }
+        .dialog-connections h3 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .dialog-connections h4 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin: 8px 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .connection-item {
+            padding: 8px 10px;
+            font-size: 13px;
+            margin-bottom: 5px;
+            background-color: rgba(240, 242, 245, 0.7);
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .connection-item:hover {
+            background-color: rgba(232, 244, 252, 0.8);
+        }
+        .connection-item b {
+            color: #3498db;
+            font-weight: 600;
+            padding: 0 4px;
+            flex: 0 0 auto;
+            margin: 0 8px;
+        }
+        .connection-source, .connection-target {
+            flex: 1;
+        }
+        .connection-source {
+            text-align: right;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .connection-target {
+            text-align: left;
+            color: #16a085;
+            font-weight: 500;
+        }
+        .dialog-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            color: #bdc3c7;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .dialog-close:hover {
+            color: #e74c3c;
+            background-color: #f9f9f9;
+            transform: rotate(90deg);
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.2);
+            z-index: 999;
+            backdrop-filter: blur(1px);
+        }
+        .overlay.active {
+            display: block;
+            animation: overlay-fade-in 0.3s ease-out;
+        }
+        @keyframes overlay-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .dialog-title i {
+            margin-right: 10px;
+            opacity: 0.8;
+            color: #6a4c93;
+        }
+        .dialog-connections h4 i {
+            margin-right: 5px;
+            color: #7f8c8d;
+        }
+
+        /* Chat Dialog Box */
+        .chat-dialog {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            width: 320px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            overflow: hidden;
+            animation: dialogFadeIn 0.5s ease-out;
+            cursor: move;
+        }
+        
+        @keyframes dialogFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .chat-dialog-header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 12px 15px;
+            font-weight: 500;
+            font-size: 16px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-dialog-header .title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .chat-dialog-header .title i {
+            font-size: 18px;
+        }
+        
+        .chat-dialog-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .chat-dialog-close:hover {
+            opacity: 1;
+        }
+        
+        .chat-dialog-body {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #8a7aff, #6c63ff);
+            color: white;
+            border-radius: 12px 12px 2px 12px;
+            padding: 10px 12px;
+            margin-left: 20px;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.2);
+            font-size: 13px;
+            position: relative;
+        }
+        
+        .ai-message {
+            align-self: flex-start;
+            background-color: #f0f0ff;
+            color: #4a4580;
+            border-radius: 12px 12px 12px 2px;
+            padding: 10px 12px;
+            margin-right: 20px;
+            margin-bottom: 5px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #6c63ff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #a8a5d3;
+            align-self: flex-end;
+            margin-top: 3px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #6c63ff;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            opacity: 0.6;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        
+        .related-topics {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        
+        .related-topics h4 {
+            font-size: 13px;
+            color: #7e7ab0;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .topic-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0f2f5;
+            color: #2c3e50;
+            padding: 5px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+        }
+        
+        .topic-tag:hover {
+            background-color: #6a4c93;
+            color: white;
+        }
+        
+        .topic-tag i {
+            margin-right: 5px;
+            font-size: 11px;
+        }
+
+        /* Message input area styles */
+        .chat-input-container {
+            display: flex;
+            padding: 10px 15px;
+            background-color: white;
+            border-top: 1px solid rgba(108, 99, 255, 0.1);
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            border: 2px solid rgba(108, 99, 255, 0.2);
+            border-radius: 30px;
+            padding: 12px 18px;
+            font-size: 14px;
+            background-color: #f9f8ff;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .chat-input:focus {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.15);
+            background-color: white;
+        }
+        
+        .send-button {
+            background-color: #6c63ff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(108, 99, 255, 0.2);
+        }
+        
+        .send-button:hover {
+            background-color: #5a52d5;
+            transform: scale(1.05);
+        }
+        
+        .send-button:active {
+            transform: scale(0.95);
+        }
+        
+        .send-button i {
+            font-size: 16px;
+        }
+        
+        /* Recommended answers */
+        .recommended-answers {
+            display: none; /* Hide the recommended answers section */
+        }
+        
+        /* External resource links */
+        .external-resources {
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+        
+        .external-resources h4 {
+            font-size: 13px;
+            color: #7e7ab0;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .resource-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .resource-link {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #3a7fc4;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        
+        .resource-link:hover {
+            background-color: #e1eeff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .resource-link i {
+            margin-right: 8px;
+            font-size: 14px;
+            color: #6c63ff;
+        }
+        
+        .resource-link .link-type {
+            background-color: #e9ecef;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: auto;
+            color: #6c757d;
+        }
+        
+        /* AI message formatting improvements */
+        .ai-message p {
+            margin: 0 0 12px 0;
+            line-height: 1.6;
+        }
+        
+        .ai-message ul, .ai-message ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        
+        .ai-message li {
+            margin-bottom: 5px;
+        }
+        
+        .ai-message .code-block {
+            background-color: #f5f7fa;
+            border-radius: 5px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 13px;
+            border-left: 3px solid #6a4c93;
+            color: #2c3e50;
+            overflow-x: auto;
+        }
+        
+        .ai-message .highlight {
+            background-color: rgba(255, 253, 201, 0.5);
+            padding: 2px 3px;
+            border-radius: 3px;
+        }
+
+        /* Tooltip for highlighting */
+        .highlight-tooltip {
+            position: fixed;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 12px 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 280px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border-left: 3px solid #6a4c93;
+        }
+        
+        .highlight-tooltip.active {
+            opacity: 1;
+        }
+        
+        .highlight-tooltip .tooltip-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .highlight-tooltip .tooltip-connections {
+            color: #34495e;
+            font-size: 13px;
+        }
+
+        /* External resources section for chat dialog */
+        .chat-dialog-resources {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Algorithms & Data Structures Knowledge Graph</h1>
+    
+    <!-- Complete the task button -->
+    <div style="position: absolute; top: 20px; right: 20px; z-index: 100;">
+        <a href="chatbot.html" style="display: inline-block; background-color: #6c63ff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: 500; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+            <i class="fas fa-comment-alt"></i> Chatbot Assistant
+        </a>
+    </div>
+    
+    <!-- Chat Dialog Box for Binary Tree Question -->
+    <div class="chat-dialog">
+        <div class="chat-dialog-header">
+            <div class="title">
+                <i class="fas fa-project-diagram"></i>
+                <span>Chatbot Assistant</span>
+            </div>
+            <button class="chat-dialog-close">&times;</button>
+        </div>
+        <div class="chat-dialog-body">
+            <div class="chat-message">
+                <div class="ai-message">
+                    Hello, you can ask me some conceptual questions
+                </div>
+                <span class="message-time">Just now</span>
+            </div>
+        </div>
+        
+        <!-- This container is now hidden via CSS -->
+        <div class="external-resources chat-dialog-resources">
+            <h4>External Resources</h4>
+            <div class="resource-links">
+                <a href="https://en.wikipedia.org/wiki/Binary_tree" class="resource-link"><i class="fas fa-external-link-alt"></i> Binary Tree on Wikipedia</a>
+                <a href="https://en.wikipedia.org/wiki/AVL_tree" class="resource-link"><i class="fas fa-external-link-alt"></i> AVL Tree on Wikipedia</a>
+                <a href="https://en.wikipedia.org/wiki/Binary_search_tree" class="resource-link"><i class="fas fa-external-link-alt"></i> Binary Search Tree on Wikipedia</a>
+                <a href="https://en.wikipedia.org/wiki/Data_structure" class="resource-link"><i class="fas fa-external-link-alt"></i> Data Structures on Wikipedia</a>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" placeholder="Ask a question about algorithms & data structures..." id="messageInput">
+            <button class="send-button" id="sendMessage">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="container" id="graph"></div>
+    <div class="legend">
+        <div class="legend-item"><span class="legend-color" style="background-color: #6a4c93;"></span> Main Category</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #2ecc71;"></span> Core Concepts</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #e74c3c;"></span> Specific Algorithms</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #f39c12;"></span> Applications</div>
+    </div>
+
+    <!-- Tooltip for node highlighting -->
+    <div class="highlight-tooltip" id="highlightTooltip">
+        <div class="tooltip-title"></div>
+        <div class="tooltip-connections"></div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="node-dialog" id="nodeDialog">
+        <div class="dialog-close" id="closeDialog">×</div>
+        <div class="dialog-header">
+            <div class="dialog-title" id="dialogTitle"></div>
+        </div>
+        <div class="dialog-description" id="dialogDescription"></div>
+        <div class="dialog-connections">
+            <h3>Relationships</h3>
+            <div id="incomingConnections"></div>
+            <div id="outgoingConnections"></div>
+        </div>
+    </div>
+
+    <script>
+        // Define the graph data
+        const graphData = {
+            nodes: [
+                { id: "Algorithms & Data Structures", group: 0, size: 30, description: "Study of algorithms and data organization" },
+                
+                // Core concepts - group 1
+                { id: "Sorting", group: 1, size: 20, description: "Algorithms that arrange elements in a specific order" },
+                { id: "Searching", group: 1, size: 20, description: "Algorithms that find elements in data structures" },
+                { id: "Recursion", group: 1, size: 20, description: "Technique where a function calls itself" },
+                { id: "Dynamic Programming", group: 1, size: 20, description: "Method for solving complex problems by breaking them down" },
+                { id: "Trees", group: 1, size: 20, description: "Hierarchical data structures with a root value and subtrees" },
+                { id: "Graphs", group: 1, size: 20, description: "Non-linear data structures with vertices and edges" },
+                { id: "Hash Tables", group: 1, size: 20, description: "Data structures that map keys to values using a hash function" },
+                { id: "Big-O Notation", group: 1, size: 20, description: "Mathematical notation for algorithm efficiency" },
+                
+                // Specific algorithms - group 2
+                { id: "Merge Sort", group: 2, size: 15, description: "Divide and conquer sorting algorithm" },
+                { id: "Quick Sort", group: 2, size: 15, description: "Divide and conquer sorting algorithm using pivots" },
+                { id: "Heap Sort", group: 2, size: 15, description: "Comparison-based sorting algorithm using binary heaps" },
+                { id: "Divide and Conquer", group: 2, size: 15, description: "Algorithm design paradigm that breaks problems into subproblems" },
+                { id: "Binary Search", group: 2, size: 15, description: "Efficient search algorithm for sorted arrays" },
+                { id: "BFS", group: 2, size: 15, description: "Breadth-First Search traversal algorithm" },
+                { id: "DFS", group: 2, size: 15, description: "Depth-First Search traversal algorithm" },
+                { id: "Dijkstra's Algorithm", group: 2, size: 15, description: "Algorithm for finding shortest paths in weighted graphs" },
+                { id: "Bellman-Ford", group: 2, size: 15, description: "Algorithm for finding shortest paths with negative edges" },
+                { id: "Binary Tree", group: 2, size: 15, description: "Tree where each node has at most two children" },
+                { id: "AVL Tree", group: 2, size: 15, description: "Self-balancing binary search tree" },
+                { id: "Memoization", group: 2, size: 15, description: "Optimization technique storing results of expensive function calls" },
+                { id: "Tabulation", group: 2, size: 15, description: "Bottom-up approach to dynamic programming" },
+
+                // Applications - group 3
+                { id: "Shortest Path Problem", group: 3, size: 15, description: "Finding path between vertices with minimal total edge weight" },
+                { id: "Array Sorting", group: 3, size: 15, description: "Arranging array elements in specific order" },
+                { id: "Database Indexing", group: 3, size: 15, description: "Using data structures to improve database query speed" },
+                { id: "Network Routing", group: 3, size: 15, description: "Finding optimal paths for data in networks" },
+                { id: "Web Crawling", group: 3, size: 15, description: "Traversing the web graph systematically" },
+                { id: "Social Network Analysis", group: 3, size: 15, description: "Analyzing social structures using graph theory" }
+            ],
+            links: [
+                // Main category connections
+                { source: "Algorithms & Data Structures", target: "Sorting", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Searching", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Recursion", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Dynamic Programming", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Trees", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Graphs", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Hash Tables", value: 1 },
+                { source: "Algorithms & Data Structures", target: "Big-O Notation", value: 1 },
+                
+                // Sorting algorithms connections
+                { source: "Sorting", target: "Merge Sort", value: 1, label: "includes" },
+                { source: "Sorting", target: "Quick Sort", value: 1, label: "includes" },
+                { source: "Sorting", target: "Heap Sort", value: 1, label: "includes" },
+                { source: "Merge Sort", target: "Divide and Conquer", value: 1, label: "uses" },
+                { source: "Quick Sort", target: "Divide and Conquer", value: 1, label: "uses" },
+                { source: "Sorting", target: "Array Sorting", value: 1, label: "solves" },
+                
+                // Searching connections
+                { source: "Searching", target: "Binary Search", value: 1, label: "includes" },
+                { source: "Binary Search", target: "Divide and Conquer", value: 1, label: "uses" },
+                
+                // Trees connections
+                { source: "Trees", target: "Binary Tree", value: 1, label: "includes" },
+                { source: "Trees", target: "AVL Tree", value: 1, label: "includes" },
+                { source: "Trees", target: "Database Indexing", value: 1, label: "enables" },
+                
+                // Graph connections
+                { source: "Graphs", target: "BFS", value: 1, label: "uses" },
+                { source: "Graphs", target: "DFS", value: 1, label: "uses" },
+                { source: "Graphs", target: "Dijkstra's Algorithm", value: 1, label: "includes" },
+                { source: "Graphs", target: "Bellman-Ford", value: 1, label: "includes" },
+                { source: "Dijkstra's Algorithm", target: "Shortest Path Problem", value: 1, label: "solves" },
+                { source: "Bellman-Ford", target: "Shortest Path Problem", value: 1, label: "solves" },
+                { source: "Graphs", target: "Network Routing", value: 1, label: "enables" },
+                { source: "Graphs", target: "Web Crawling", value: 1, label: "enables" },
+                { source: "Graphs", target: "Social Network Analysis", value: 1, label: "enables" },
+                
+                // Dynamic Programming connections
+                { source: "Dynamic Programming", target: "Memoization", value: 1, label: "uses" },
+                { source: "Dynamic Programming", target: "Tabulation", value: 1, label: "uses" },
+                
+                // Recursion connections
+                { source: "Recursion", target: "Merge Sort", value: 1, label: "used in" },
+                { source: "Recursion", target: "DFS", value: 1, label: "used in" },
+                
+                // Hash Tables connections
+                { source: "Hash Tables", target: "Database Indexing", value: 1, label: "enables" },
+                
+                // Big-O connections
+                { source: "Big-O Notation", target: "Sorting", value: 1, label: "analyzes" },
+                { source: "Big-O Notation", target: "Searching", value: 1, label: "analyzes" }
+            ]
+        };
+
+        // Set up the D3 visualization
+        const width = window.innerWidth;
+        const height = window.innerHeight - 80; // Accounting for the header
+
+        // Custom color scheme
+        const colorMap = {
+            0: "#6a4c93", // Main category - purple
+            1: "#2ecc71", // Core concepts - green
+            2: "#e74c3c", // Specific algorithms - red
+            3: "#f39c12"  // Applications - orange
+        };
+
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id).distance(d => 
+                // Make connections to the main node longer
+                (d.source.id === "Algorithms & Data Structures" || d.target.id === "Algorithms & Data Structures") ? 180 : 120
+            ))
+            .force("charge", d3.forceManyBody().strength(-500))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => d.size * 1.5));
+
+        const svg = d3.select("#graph").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+            
+        // Create background rectangle to detect clicks on empty space
+        svg.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "transparent")
+            .on("click", clearHighlights);
+
+        // Define arrow markers for the links
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 20)
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#999");
+
+        // Add gradient definitions for nodes
+        const defs = svg.append("defs");
+        
+        // Create gradients for each group
+        Object.keys(colorMap).forEach(group => {
+            const baseColor = colorMap[group];
+            const gradient = defs.append("radialGradient")
+                .attr("id", `gradient-${group}`)
+                .attr("cx", "30%")
+                .attr("cy", "30%")
+                .attr("r", "70%");
+            
+            gradient.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", d3.rgb(baseColor).brighter(0.5));
+            
+            gradient.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", d3.rgb(baseColor).darker(0.5));
+        });
+
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(graphData.links)
+            .enter().append("line")
+            .attr("stroke-width", d => Math.sqrt(d.value) * 1.5)
+            .attr("marker-end", "url(#arrowhead)");
+
+        const node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(graphData.nodes)
+            .enter().append("circle")
+            .attr("r", d => d.size)
+            .attr("fill", d => `url(#gradient-${d.group})`)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", showNodeDetails);
+
+        const nodeLabels = svg.append("g")
+            .attr("class", "labels")
+            .selectAll("text")
+            .data(graphData.nodes)
+            .enter().append("text")
+            .text(d => d.id)
+            .attr("dy", d => -d.size - 5)
+            .attr("text-anchor", "middle");
+
+        const linkLabels = svg.append("g")
+            .attr("class", "link-labels")
+            .selectAll("text")
+            .data(graphData.links.filter(d => d.label))
+            .enter().append("text")
+            .text(d => d.label)
+            .attr("text-anchor", "middle");
+
+        // Add tooltips
+        node.append("title")
+            .text(d => `${d.id}\n${d.description}`);
+
+        // Add a background to link labels for better visibility
+        const labelBackgrounds = svg.append("g")
+            .attr("class", "label-backgrounds")
+            .selectAll("rect")
+            .data(graphData.links.filter(d => d.label))
+            .enter().append("rect")
+            .attr("fill", "rgba(255,255,255,0.7)")
+            .attr("rx", 3)
+            .attr("ry", 3);
+
+        simulation
+            .nodes(graphData.nodes)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(graphData.links);
+
+        function ticked() {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x = Math.max(d.size, Math.min(width - d.size, d.x)))
+                .attr("cy", d => d.y = Math.max(d.size, Math.min(height - d.size, d.y)));
+
+            nodeLabels
+                .attr("x", d => d.x)
+                .attr("y", d => d.y - 5);
+
+            linkLabels
+                .attr("x", d => (d.source.x + d.target.x) / 2)
+                .attr("y", d => (d.source.y + d.target.y) / 2 - 5);
+                
+            // Update background rectangles for link labels
+            const padding = 4;
+            linkLabels.each(function(d, i) {
+                const bbox = this.getBBox();
+                labelBackgrounds.filter((d, j) => i === j)
+                    .attr("x", bbox.x - padding)
+                    .attr("y", bbox.y - padding)
+                    .attr("width", bbox.width + 2 * padding)
+                    .attr("height", bbox.height + 2 * padding);
+            });
+        }
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Make dialog draggable
+        let dragTarget = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // Get the dialog elements
+        const dialogElement = document.getElementById("nodeDialog");
+        const dialogHeader = document.querySelector(".dialog-header");
+
+        // Initialize dragging
+        dialogHeader.addEventListener("mousedown", function(e) {
+            // Only allow dragging from the header
+            if (e.target.closest(".dialog-header")) {
+                e.preventDefault();
+                
+                // Get the bounding box of the dialog
+                const rect = dialogElement.getBoundingClientRect();
+                
+                // Calculate the mouse offset from the dialog's top-left corner
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                
+                // Set as dragging target
+                dragTarget = dialogElement;
+                
+                // Apply draggable class (removes default centering)
+                dialogElement.classList.add("draggable");
+            }
+        });
+
+        // Handle dragging movement
+        document.addEventListener("mousemove", function(e) {
+            if (dragTarget !== null) {
+                // Calculate new position
+                const x = e.clientX - dragOffsetX;
+                const y = e.clientY - dragOffsetY;
+                
+                // Apply new position
+                dragTarget.style.left = x + "px";
+                dragTarget.style.top = y + "px";
+            }
+        });
+
+        // End dragging
+        document.addEventListener("mouseup", function() {
+            dragTarget = null;
+        });
+
+        // Node dialog functionality
+        function showNodeDetails(event, d) {
+            event.stopPropagation(); // Prevent event from bubbling
+            
+            // Clear any previous highlights
+            clearHighlights();
+            
+            // Highlight the clicked node and its connected nodes and links
+            highlightConnections(d);
+            
+            // Position the tooltip near the click location
+            const tooltip = document.getElementById("highlightTooltip");
+            tooltip.style.left = `${event.pageX + 15}px`;
+            tooltip.style.top = `${event.pageY - 20}px`;
+            
+            /* Original dialog display code removed to cancel the popups */
+        }
+
+        // Function to clear all highlights
+        function clearHighlights() {
+            // Reset all nodes to their original appearance
+            d3.selectAll(".nodes circle")
+                .classed("highlighted", false)
+                .classed("connected", false)
+                .style("stroke", "#fff")
+                .style("stroke-width", "2px");
+            
+            // Reset all links to their original appearance
+            d3.selectAll(".links line")
+                .classed("highlighted", false)
+                .style("stroke", "#999")
+                .style("stroke-opacity", "0.6")
+                .style("stroke-width", "1.5px");
+                
+            // Hide the tooltip
+            const tooltip = document.getElementById("highlightTooltip");
+            tooltip.classList.remove("active");
+        }
+
+        // Function to highlight a node and its connections
+        function highlightConnections(node) {
+            // Find connected nodes and links
+            const linkedNodes = [];
+            const connectedLinks = [];
+            
+            // Find all links connected to this node
+            graphData.links.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                
+                if (sourceId === node.id || targetId === node.id) {
+                    connectedLinks.push(link);
+                    
+                    // Add the connected node to our list
+                    if (sourceId === node.id) {
+                        const connectedNode = graphData.nodes.find(n => n.id === targetId);
+                        if (connectedNode) linkedNodes.push(connectedNode);
+                    } else {
+                        const connectedNode = graphData.nodes.find(n => n.id === sourceId);
+                        if (connectedNode) linkedNodes.push(connectedNode);
+                    }
+                }
+            });
+            
+            // Highlight the selected node
+            d3.selectAll(".nodes circle")
+                .filter(d => d.id === node.id)
+                .classed("highlighted", true)
+                .style("stroke", "#ff9900")
+                .style("stroke-width", "3px");
+            
+            // Highlight connected nodes
+            d3.selectAll(".nodes circle")
+                .filter(d => linkedNodes.some(n => n.id === d.id))
+                .classed("connected", true)
+                .style("stroke", "#6a4c93")
+                .style("stroke-width", "3px");
+            
+            // Highlight connected links
+            d3.selectAll(".links line")
+                .filter(l => {
+                    const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+                    const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+                    return (sourceId === node.id || targetId === node.id);
+                })
+                .classed("highlighted", true)
+                .style("stroke", "#6a4c93")
+                .style("stroke-opacity", "0.9")
+                .style("stroke-width", "3px");
+            
+            // Optional: Add a highlight animation
+            d3.selectAll(".nodes circle.highlighted")
+                .transition()
+                .duration(300)
+                .attr("r", d => d.size * 1.15)
+                .transition()
+                .duration(300)
+                .attr("r", d => d.size);
+                
+            // Show tooltip with connection information
+            const tooltip = document.getElementById("highlightTooltip");
+            const tooltipTitle = tooltip.querySelector(".tooltip-title");
+            const tooltipConnections = tooltip.querySelector(".tooltip-connections");
+            
+            // Set tooltip content
+            tooltipTitle.textContent = node.id;
+            
+            // Show number of connections
+            let connectionsText = `Connected to ${linkedNodes.length} node${linkedNodes.length !== 1 ? 's' : ''}`;
+            
+            // Add connection details if there are any
+            if (linkedNodes.length > 0) {
+                connectionsText += ': ' + linkedNodes.map(n => n.id).join(', ');
+            }
+            
+            tooltipConnections.textContent = connectionsText;
+            
+            // Position tooltip near the node's position in the visualization
+            // Note: Position is now handled in the showNodeDetails function
+            
+            // Make tooltip visible
+            tooltip.classList.add("active");
+        }
+
+        // Get appropriate icon for node group
+        function getIconForGroup(group) {
+            switch(group) {
+                case 0: return "sitemap"; // Main category
+                case 1: return "cube"; // Core concept
+                case 2: return "code"; // Algorithm
+                case 3: return "project-diagram"; // Application
+                default: return "circle";
+            }
+        }
+
+        // Setup event listeners for closing dialog
+        /*
+        document.getElementById("closeDialog").addEventListener("click", closeDialog);
+        document.getElementById("overlay").addEventListener("click", closeDialog);
+        */
+
+        function closeDialog() {
+            document.getElementById("overlay").classList.remove("active");
+            document.getElementById("nodeDialog").classList.remove("active");
+        }
+
+        // Add this at the end of your script section
+        document.querySelector('.chat-dialog-close').addEventListener('click', function() {
+            document.querySelector('.chat-dialog').style.display = 'none';
+        });
+        
+        document.querySelectorAll('.topic-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const topic = this.textContent.trim();
+                
+                // If it's the explore button, highlight the relevant node in the graph
+                if (topic.includes('Explore in Graph')) {
+                    // Find a relevant node based on previous message
+                    const nodeToExplore = findRelevantNode("Binary Tree");
+                    if (nodeToExplore) {
+                        // Simulate a click on the node to highlight connections
+                        simulateNodeClick(nodeToExplore);
+                    }
+                } else {
+                    // Create a new user question about this topic
+                    const userMessage = document.createElement('div');
+                    userMessage.className = 'chat-message';
+                    userMessage.innerHTML = `
+                        <div class="user-message">Tell me about ${topic}</div>
+                        <span class="message-time">Just now</span>
+                    `;
+                    
+                    document.querySelector('.chat-dialog-body').appendChild(userMessage);
+                    
+                    // Show typing indicator
+                    const typingIndicator = document.createElement('div');
+                    typingIndicator.className = 'typing-indicator';
+                    typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+                    document.querySelector('.chat-dialog-body').appendChild(typingIndicator);
+                    
+                    // Simulate AI response after typing
+                    setTimeout(() => {
+                        typingIndicator.remove();
+                        
+                        const aiMessage = document.createElement('div');
+                        aiMessage.className = 'chat-message';
+                        
+                        // Customize response based on topic
+                        let responseText = '';
+                        if (topic.includes('AVL Tree')) {
+                            responseText = `An AVL Tree is a self-balancing binary search tree where the height difference between left and right subtrees cannot exceed 1 for all nodes.`;
+                        } else if (topic.includes('Trees')) {
+                            responseText = `Trees are hierarchical data structures with a root node and child nodes. They're fundamental in computer science, used for everything from file systems to database indexing.`;
+                        } else if (topic.includes('Binary Search Tree')) {
+                            responseText = `A Binary Search Tree (BST) is a binary tree with the property that all nodes in the left subtree have values less than the node's value, and all nodes in the right subtree have values greater than the node's value.`;
+                        } else if (topic.includes('Data Structures')) {
+                            responseText = `Data Structures are specialized formats for organizing and storing data to enable efficient access and modification. They're fundamental building blocks in computer science and algorithms.`;
+                        } else {
+                            responseText = `I'd be happy to tell you about ${topic}!`;
+                        }
+                        
+                        aiMessage.innerHTML = `
+                            <div class="ai-message">
+                                ${responseText}
+                                <div class="related-topics" style="margin-top: 10px;">
+                                    <div class="topic-tags">
+                                        <div class="topic-tag" style="background-color: #6a4c93; color: white;">
+                                            <i class="fas fa-external-link-alt"></i> Explore in Graph
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="message-time">Just now</span>
+                        `;
+                        
+                        document.querySelector('.chat-dialog-body').appendChild(aiMessage);
+                        document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+                        
+                        // Add click event to the "Explore in Graph" button
+                        const exploreGraphButton = aiMessage.querySelector('.topic-tag');
+                        if (exploreGraphButton) {
+                            exploreGraphButton.addEventListener('click', function() {
+                                // Find a relevant node to explore based on the topic
+                                const nodeToExplore = topic.includes('Binary Search Tree') ? 
+                                    "Binary Tree" : topic.replace(/^[^A-Za-z]+/, '');
+                                
+                                // Simulate a click on the node to highlight
+                                simulateNodeClick(nodeToExplore);
+                            });
+                        }
+                    }, 1500);
+                }
+                
+                document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+            });
+        });
+        
+        // Function to simulate clicking a node with similar name to the topic
+        function simulateNodeClick(topic) {
+            // Find the node that best matches the topic
+            let targetNodeId = "";
+            
+            if (typeof topic === 'string') {
+                // If we're given a string (legacy topic-based selection)
+                if (topic.includes('AVL Tree')) {
+                    targetNodeId = "AVL Tree";
+                } else if (topic.includes('Trees')) {
+                    targetNodeId = "Trees";
+                } else if (topic.includes('Binary Search Tree')) {
+                    targetNodeId = "Binary Tree";
+                } else if (topic.includes('Data Structures')) {
+                    targetNodeId = "Algorithms & Data Structures";
+                } else {
+                    // Use the topic string directly if it matches a node id
+                    targetNodeId = topic;
+                }
+            } else {
+                // If we're already given a node id directly
+                targetNodeId = topic;
+            }
+            
+            // Find the node object matching the id
+            const nodeObj = graphData.nodes.find(n => n.id === targetNodeId);
+            
+            if (nodeObj) {
+                // Clear any previous highlights
+                clearHighlights();
+                
+                // Use the node highlight function instead of the old animation
+                highlightConnections(nodeObj);
+                
+                // Create a simulated click event at the node position for the tooltip
+                const mockEvent = {
+                    pageX: nodeObj.x || window.innerWidth / 2,
+                    pageY: nodeObj.y || window.innerHeight / 2,
+                    stopPropagation: () => {} // Mock function
+                };
+                
+                // Position the tooltip
+                const tooltip = document.getElementById("highlightTooltip");
+                tooltip.style.left = `${mockEvent.pageX + 15}px`;
+                tooltip.style.top = `${mockEvent.pageY - 20}px`;
+            } else {
+                console.log("Node not found:", targetNodeId);
+            }
+        }
+
+        // Function to find a relevant node based on message content
+        function findRelevantNode(message) {
+            message = message.toLowerCase();
+            
+            // Direct matches
+            for (const node of graphData.nodes) {
+                if (message.includes(node.id.toLowerCase())) {
+                    return node.id;
+                }
+            }
+            
+            // Topic based matches
+            if (message.includes('sort') || message.includes('sorting')) {
+                return "Sorting";
+            } else if (message.includes('search')) {
+                return "Searching";
+            } else if (message.includes('tree') || message.includes('binary')) {
+                return "Binary Tree";
+            } else if (message.includes('avl')) {
+                return "AVL Tree";
+            } else if (message.includes('graph')) {
+                return "Graphs";
+            } else if (message.includes('dynamic')) {
+                return "Dynamic Programming";
+            } else if (message.includes('hash')) {
+                return "Hash Tables";
+            } else if (message.includes('recursion')) {
+                return "Recursion";
+            } else if (message.includes('bfs')) {
+                return "BFS";
+            } else if (message.includes('dfs')) {
+                return "DFS";
+            } else if (message.includes('dijkstra')) {
+                return "Dijkstra's Algorithm";
+            }
+            
+            // Default to main node if no match found
+            return "Algorithms & Data Structures";
+        }
+
+        // Make chat dialog draggable
+        let isDragging = false;
+        let offsetX, offsetY;
+        const chatDialog = document.querySelector('.chat-dialog');
+        
+        // Add click events to external resource links in the initial message
+        document.querySelectorAll('.resource-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Allow default link behavior to open in new tab
+                // but log for analytics purposes if needed
+                console.log('Resource clicked:', link.href);
+            });
+        });
+        
+        // Mouse down event to start dragging
+        chatDialog.addEventListener('mousedown', function(e) {
+            // Only allow dragging from the header
+            if (e.target.closest('.chat-dialog-header')) {
+                isDragging = true;
+                
+                // Calculate the offset of the mouse pointer relative to the dialog
+                const rect = chatDialog.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                
+                // Add a dragging class for styling if needed
+                chatDialog.classList.add('dragging');
+            }
+        });
+        
+        // Mouse move event to move the dialog
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            // Calculate new position
+            const newX = e.clientX - offsetX;
+            const newY = e.clientY - offsetY;
+            
+            // Set new position with boundaries to keep dialog in viewport
+            chatDialog.style.left = Math.max(0, Math.min(window.innerWidth - chatDialog.offsetWidth, newX)) + 'px';
+            chatDialog.style.top = Math.max(0, Math.min(window.innerHeight - chatDialog.offsetHeight, newY)) + 'px';
+        });
+        
+        // Mouse up event to stop dragging
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                chatDialog.classList.remove('dragging');
+            }
+        });
+        
+        // Add dragging style
+        const dragStyleElement = document.createElement('style');
+        dragStyleElement.textContent = `
+            .chat-dialog.dragging {
+                opacity: 0.9;
+                transition: none;
+            }
+        `;
+        document.head.appendChild(dragStyleElement);
+        
+        // Message sending functionality
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendMessage');
+        
+        // Function to send a message
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+            
+            // Create user message element
+            const userMessage = document.createElement('div');
+            userMessage.className = 'chat-message';
+            userMessage.innerHTML = `
+                <div class="user-message">${messageText}</div>
+                <span class="message-time">Just now</span>
+            `;
+            
+            // Add to chat
+            document.querySelector('.chat-dialog-body').appendChild(userMessage);
+            
+            // Clear input field
+            messageInput.value = '';
+            
+            // Show typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            document.querySelector('.chat-dialog-body').appendChild(typingIndicator);
+            
+            // Scroll to bottom
+            document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+            
+            // Generate AI response after a delay
+            setTimeout(() => {
+                // Remove typing indicator
+                typingIndicator.remove();
+                
+                // Create AI response
+                const aiMessage = document.createElement('div');
+                aiMessage.className = 'chat-message';
+                
+                // Generate response content
+                let responseText = generateResponse(messageText);
+                
+                // Create AI message HTML
+                aiMessage.innerHTML = `
+                    <div class="ai-message">
+                        ${responseText}
+                    </div>
+                    <span class="message-time">Just now</span>
+                `;
+                
+                // Add to chat
+                document.querySelector('.chat-dialog-body').appendChild(aiMessage);
+                
+                // Scroll to bottom
+                document.querySelector('.chat-dialog-body').scrollTop = document.querySelector('.chat-dialog-body').scrollHeight;
+                
+                // Add click events to topic tags
+                aiMessage.querySelectorAll('.topic-tag').forEach(tag => {
+                    tag.addEventListener('click', function() {
+                        const topic = this.textContent.trim();
+                        
+                        // If it's the explore button, highlight the relevant node in the graph
+                        if (topic.includes('Explore in Graph')) {
+                            // Find a relevant node based on the message content
+                            const nodeToExplore = findRelevantNode(messageText);
+                            if (nodeToExplore) {
+                                // Simulate a click on the node to highlight connections
+                                simulateNodeClick(nodeToExplore);
+                            }
+                        } else {
+                            // Otherwise, ask about this topic
+                            messageInput.value = `Tell me about ${topic}`;
+                            sendMessage();
+                        }
+                    });
+                });
+                
+                // Add click events to external resource links
+                aiMessage.querySelectorAll('.resource-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        // Allow default link behavior to open in new tab
+                        // but log for analytics purposes if needed
+                        console.log('Resource clicked:', link.href);
+                    });
+                });
+            }, 1500);
+        }
+        
+        // Generate a response based on user message
+        function generateResponse(message) {
+            message = message.toLowerCase();
+            let content, learnMoreLinks, relatedTopics;
+            
+            // Generate main content based on the question
+            if (message.includes('binary tree')) {
+                content = `
+                    <p>A Binary Tree is a hierarchical data structure where each node has at most two children. It's widely used for efficient searching and as a foundation for more complex tree structures.</p>
+                    
+                    <p>Key characteristics:</p>
+                    <ul>
+                        <li>Each node has at most two children (left child and right child)</li>
+                        <li>A node can have 0, 1, or 2 children</li>
+                        <li>Each node contains a data element and references to its children</li>
+                    </ul>
+                    
+                    <p>Binary trees form the basis for many specialized tree structures like <span class="highlight">Binary Search Trees</span>, <span class="highlight">Heaps</span>, and <span class="highlight">AVL Trees</span>.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=fAAZixBzIAI" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Binary Trees Explained <span class="link-type">Video</span></a>
+                    <a href="https://www.geeksforgeeks.org/binary-tree-data-structure/" target="_blank" class="resource-link"><i class="fas fa-file-alt"></i> Binary Tree Data Structure <span class="link-type">Article</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-code"></i> AVL Tree</div>
+                    <div class="topic-tag"><i class="fas fa-sitemap"></i> Trees</div>
+                    <div class="topic-tag"><i class="fas fa-project-diagram"></i> Binary Search Tree</div>
+                    <div class="topic-tag"><i class="fas fa-cube"></i> Data Structures</div>
+                `;
+            } else if (message.includes('difference between binary tree and binary search tree')) {
+                content = `
+                    <p>The key difference between binary trees and binary search trees (BST) is in how data is organized:</p>
+                    
+                    <p><span class="highlight">Binary Tree:</span></p>
+                    <ul>
+                        <li>Each node has at most two children</li>
+                        <li>No specific ordering of nodes required</li>
+                        <li>Nodes can be arranged in any way</li>
+                    </ul>
+                    
+                    <p><span class="highlight">Binary Search Tree:</span></p>
+                    <ul>
+                        <li>Each node has at most two children</li>
+                        <li>For each node, all values in the left subtree are less than the node's value</li>
+                        <li>For each node, all values in the right subtree are greater than the node's value</li>
+                        <li>This ordering enables efficient O(log n) search operations</li>
+                    </ul>
+                    
+                    <p>A BST is a specialized type of binary tree that maintains a specific ordering property to enable efficient searching.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=GzJoqJO1zdI" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Binary Tree vs Binary Search Tree <span class="link-type">Video</span></a>
+                    <a href="https://www.geeksforgeeks.org/difference-between-binary-tree-and-binary-search-tree/" target="_blank" class="resource-link"><i class="fas fa-file-alt"></i> Difference Between BT and BST <span class="link-type">Article</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-code"></i> Binary Tree</div>
+                    <div class="topic-tag"><i class="fas fa-sitemap"></i> Binary Search Tree</div>
+                    <div class="topic-tag"><i class="fas fa-project-diagram"></i> Tree Traversal</div>
+                    <div class="topic-tag"><i class="fas fa-cube"></i> Data Structures</div>
+                `;
+            } else if (message.includes('implement') && message.includes('binary tree')) {
+                content = `
+                    <p>Binary trees can be implemented in several ways:</p>
+                    
+                    <p>1. <span class="highlight">Node-based implementation</span> (most common):</p>
+                    <div class="code-block">class TreeNode {
+    constructor(value) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
+    }
+}</div>
+                    
+                    <p>2. <span class="highlight">Array-based implementation</span> (for complete binary trees):</p>
+                    <ul>
+                        <li>Root at index 0</li>
+                        <li>For node at index i, left child at 2i+1, right child at 2i+2</li>
+                        <li>Space-efficient but works best for complete or nearly complete trees</li>
+                    </ul>
+                    
+                    <p>The node-based approach is more flexible and commonly used in practice, providing easier traversal and modification operations.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=6vt3PFRC11I" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Implementing Binary Trees <span class="link-type">Video</span></a>
+                    <a href="https://www.geeksforgeeks.org/implementation-binary-search-tree-javascript/" target="_blank" class="resource-link"><i class="fas fa-code"></i> Binary Tree Implementation <span class="link-type">Code</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-code"></i> Binary Tree</div>
+                    <div class="topic-tag"><i class="fas fa-project-diagram"></i> Tree Traversal</div>
+                    <div class="topic-tag"><i class="fas fa-cogs"></i> Data Structures</div>
+                `;
+            } else if (message.includes('operations') && message.includes('binary tree')) {
+                content = `
+                    <p>Common operations on binary trees include:</p>
+                    
+                    <p><span class="highlight">Traversal algorithms:</span></p>
+                    <ul>
+                        <li>In-order: Left subtree → Root → Right subtree</li>
+                        <li>Pre-order: Root → Left subtree → Right subtree</li>
+                        <li>Post-order: Left subtree → Right subtree → Root</li>
+                        <li>Level-order: Breadth-first traversal, level by level</li>
+                    </ul>
+                    
+                    <p><span class="highlight">Other operations:</span></p>
+                    <ul>
+                        <li>Insertion: Add a new node to the tree</li>
+                        <li>Deletion: Remove a node while maintaining tree structure</li>
+                        <li>Search: Find a node with a specific value</li>
+                        <li>Height/Depth calculation: Determine the maximum length path</li>
+                        <li>Size calculation: Count the total number of nodes</li>
+                    </ul>
+                    
+                    <p>For binary search trees specifically, operations like search, insert, and delete can be performed in O(log n) time on average.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=9RHO6jU--GU" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Tree Traversal Algorithms <span class="link-type">Video</span></a>
+                    <a href="https://www.youtube.com/watch?v=86g8jAQug04" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Binary Tree Operations <span class="link-type">Video</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-code"></i> Binary Tree</div>
+                    <div class="topic-tag"><i class="fas fa-project-diagram"></i> Tree Traversal</div>
+                    <div class="topic-tag"><i class="fas fa-search"></i> Binary Search</div>
+                `;
+            } else if (message.includes('avl tree')) {
+                content = `
+                    <p>An AVL Tree is a self-balancing binary search tree where the height difference between left and right subtrees cannot exceed 1 for all nodes.</p>
+                    
+                    <p>Key features:</p>
+                    <ul>
+                        <li>Self-balancing through rotations</li>
+                        <li>Maintains O(log n) height</li>
+                        <li>All operations (search, insert, delete) have O(log n) time complexity</li>
+                        <li>Named after inventors Adelson-Velsky and Landis</li>
+                    </ul>
+                    
+                    <p>The balancing factor (height difference) is tracked for each node, triggering rotations when it exceeds ±1.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=jDM6_TnYIqE" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> AVL Trees Explained <span class="link-type">Video</span></a>
+                    <a href="https://www.youtube.com/watch?v=7m94k2Qhg68" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> AVL Tree Rotations <span class="link-type">Video</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-code"></i> Binary Tree</div>
+                    <div class="topic-tag"><i class="fas fa-sitemap"></i> Binary Search Tree</div>
+                    <div class="topic-tag"><i class="fas fa-balance-scale"></i> Red-Black Tree</div>
+                `;
+            } else if (message.includes('sort') || message.includes('sorting')) {
+                content = `
+                    <p>Sorting algorithms arrange elements in a specific order (usually ascending or descending).</p>
+                    
+                    <p>Common sorting algorithms:</p>
+                    <ul>
+                        <li><span class="highlight">Merge Sort</span>: Divide and conquer, O(n log n), stable</li>
+                        <li><span class="highlight">Quick Sort</span>: Partitioning, average O(n log n), in-place</li>
+                        <li><span class="highlight">Heap Sort</span>: Using binary heap, O(n log n), in-place</li>
+                        <li><span class="highlight">Insertion Sort</span>: Simple, O(n²), efficient for small datasets</li>
+                    </ul>
+                    
+                    <p>Choosing the right sorting algorithm depends on data size, initial order, stability requirements, and memory constraints.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=kPRA0W1kECg" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Visualization of Sorting Algorithms <span class="link-type">Video</span></a>
+                    <a href="https://www.youtube.com/watch?v=Hoixgm4-P4M" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Sorting Algorithms Explained <span class="link-type">Video</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-sort"></i> Merge Sort</div>
+                    <div class="topic-tag"><i class="fas fa-sort-amount-down"></i> Quick Sort</div>
+                    <div class="topic-tag"><i class="fas fa-sort-numeric-down"></i> Heap Sort</div>
+                    <div class="topic-tag"><i class="fas fa-chart-line"></i> Algorithm Complexity</div>
+                `;
+            } else if (message.includes('search')) {
+                content = `
+                    <p>Searching algorithms help find elements in data structures.</p>
+                    
+                    <p>Common searching algorithms:</p>
+                    <ul>
+                        <li><span class="highlight">Linear Search</span>: Simple O(n) algorithm that works on any array</li>
+                        <li><span class="highlight">Binary Search</span>: O(log n) algorithm that requires a sorted array</li>
+                        <li><span class="highlight">Depth-First Search (DFS)</span>: For graph/tree traversal, using stack</li>
+                        <li><span class="highlight">Breadth-First Search (BFS)</span>: For graph/tree traversal, using queue</li>
+                    </ul>
+                    
+                    <p>The efficiency of search operations depends on the data structure. Binary search trees, hash tables, and balanced trees provide more efficient searching than arrays or linked lists.</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=MFhxShGxHWc" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Binary Search Algorithm <span class="link-type">Video</span></a>
+                    <a href="https://www.youtube.com/watch?v=0e0DgbVVGXE" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> BFS vs DFS <span class="link-type">Video</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-search"></i> Binary Search</div>
+                    <div class="topic-tag"><i class="fas fa-project-diagram"></i> Graph Traversal</div>
+                    <div class="topic-tag"><i class="fas fa-binoculars"></i> Linear Search</div>
+                `;
+            } else {
+                content = `
+                    <p>That's an interesting question about algorithms and data structures. Could you provide more specific details about what you'd like to learn?</p>
+                    
+                    <p>I can help with topics like:</p>
+                    <ul>
+                        <li>Data structures (arrays, linked lists, trees, graphs, etc.)</li>
+                        <li>Sorting and searching algorithms</li>
+                        <li>Algorithm complexity and Big O notation</li>
+                        <li>Dynamic programming</li>
+                        <li>Graph algorithms</li>
+                    </ul>
+                    
+                    <p>Feel free to ask about any specific concept you'd like to understand better!</p>
+                `;
+                
+                learnMoreLinks = `
+                    <a href="https://www.youtube.com/watch?v=8hly31xKli0" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Data Structures & Algorithms <span class="link-type">Video Course</span></a>
+                    <a href="https://www.youtube.com/watch?v=RBSGKlAvoiM" target="_blank" class="resource-link"><i class="fab fa-youtube"></i> Data Structures Overview <span class="link-type">Video</span></a>
+                `;
+                
+                relatedTopics = `
+                    <div class="topic-tag"><i class="fas fa-cube"></i> Data Structures</div>
+                    <div class="topic-tag"><i class="fas fa-cogs"></i> Algorithms</div>
+                    <div class="topic-tag"><i class="fas fa-sort"></i> Sorting</div>
+                    <div class="topic-tag"><i class="fas fa-search"></i> Searching</div>
+                `;
+            }
+            
+            // Combine all parts into the final response
+            return `
+                ${content}
+                
+                <div class="external-resources">
+                    <h4>Learn More</h4>
+                    <div class="resource-links">
+                        ${learnMoreLinks}
+                    </div>
+                </div>
+                
+                <div class="related-topics">
+                    <h4>Related Topics</h4>
+                    <div class="topic-tags">
+                        ${relatedTopics}
+                        <div class="topic-tag" style="background-color: #6a4c93; color: white;"><i class="fas fa-external-link-alt"></i> Explore in Graph</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Generate related topic tags based on message content
+        function generateRelatedTags(message) {
+            message = message.toLowerCase();
+            let tags = [];
+            
+            // Add tags based on message content
+            if (message.includes('tree') || message.includes('binary')) {
+                tags.push('<div class="topic-tag"><i class="fas fa-code"></i> Binary Tree</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-sitemap"></i> Trees</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-project-diagram"></i> AVL Tree</div>');
+            }
+            
+            if (message.includes('sort')) {
+                tags.push('<div class="topic-tag"><i class="fas fa-sort"></i> Merge Sort</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-sort-amount-down"></i> Quick Sort</div>');
+            }
+            
+            if (message.includes('search')) {
+                tags.push('<div class="topic-tag"><i class="fas fa-search"></i> Binary Search</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-binoculars"></i> Searching</div>');
+            }
+            
+            if (message.includes('graph')) {
+                tags.push('<div class="topic-tag"><i class="fas fa-project-diagram"></i> BFS</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-network-wired"></i> DFS</div>');
+            }
+            
+            // Always include data structures as a fallback
+            if (tags.length === 0) {
+                tags.push('<div class="topic-tag"><i class="fas fa-cube"></i> Data Structures</div>');
+                tags.push('<div class="topic-tag"><i class="fas fa-cogs"></i> Algorithms</div>');
+            }
+            
+            // Add explore button
+            tags.push('<div class="topic-tag" style="background-color: #6a4c93; color: white;"><i class="fas fa-external-link-alt"></i> Explore in Graph</div>');
+            
+            return tags.join('');
+        }
+        
+        // Generate recommended follow-up questions based on the current conversation
+        // This function is no longer needed since we're using external links instead
+        function generateRecommendedQuestions(message) {
+            // Deprecated - using external links directly in responses
+            return [];
+        }
+        
+        // Function to update recommended questions
+        // This function is no longer needed since we're using external links instead
+        function updateRecommendedQuestions(questions) {
+            // Deprecated - using external links directly in responses
+        }
+        
+        // Event listeners for sending messages
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html> 
