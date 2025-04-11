@@ -590,7 +590,7 @@
         <div class="chat-container">
             <div class="chat-header">
                 <span>AI Chat Assistant</span>
-                <a href="knowledge_graph.html" class="knowledge-graph-btn">
+                <a href="index.html" class="knowledge-graph-btn">
                     <i class="fas fa-project-diagram"></i>
                     Knowledge Graph
                 </a>
@@ -1618,7 +1618,7 @@ findMax(node = this.root) {
                 closeDialog(dialog);
                 
                 // Navigate to knowledge_graph.html with the node name as a parameter
-                window.location.href = `knowledge_graph.html?node=${encodeURIComponent(title)}`;
+                window.location.href = `index.html?node=${encodeURIComponent(title)}`;
             });
         }
         
@@ -1846,7 +1846,7 @@ findMax(node = this.root) {
                     if (viewGraphButton) {
                         viewGraphButton.addEventListener('click', function() {
                             // Navigate to knowledge graph page
-                            window.location.href = 'knowledge_graph.html';
+                            window.location.href = 'index.html';
                         });
                     }
                 }, 1500);
